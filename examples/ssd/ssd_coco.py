@@ -65,6 +65,8 @@ def AddExtraLayers(net, use_batchnorm=True, lr_mult=1):
     return net
 
 
+args = ssd_parse_args()
+
 ### Modify the following parameters accordingly ###
 # The directory which contains the caffe code.
 # We assume you are running the script at the CAFFE_ROOT.
@@ -312,7 +314,7 @@ max_ratio = 90
 step = int(math.floor((max_ratio - min_ratio) / (len(mbox_source_layers) - 2)))
 min_sizes = []
 max_sizes = []
-for ratio in xrange(min_ratio, max_ratio + 1, step):
+for ratio in range(min_ratio, max_ratio + 1, step):
   min_sizes.append(min_dim * ratio / 100.)
   max_sizes.append(min_dim * (ratio + step) / 100.)
 min_sizes = [min_dim * 7 / 100.] + min_sizes
@@ -331,14 +333,17 @@ clip = False
 
 # Solver parameters.
 # Defining which GPUs to use.
-gpus = "0,1,2,3"
-gpulist = gpus.split(",")
-num_gpus = len(gpulist)
+if "" == args.device or "cpu" == args.device:
+    num_gpus = 0
+else:
+    gpus = "0"
+    gpulist = gpus.split(",")
+    num_gpus = len(gpulist)
 
 # Divide the mini-batch to different GPUs.
 batch_size = 32
 accum_batch_size = 32
-iter_size = accum_batch_size / batch_size
+iter_size = accum_batch_size // batch_size
 solver_mode = P.Solver.CPU
 device_id = 0
 batch_size_per_device = batch_size
@@ -360,7 +365,7 @@ elif normalization_mode == P.Loss.FULL:
 # Evaluate on whole test set.
 num_test_image = 5000
 test_batch_size = 8
-test_iter = num_test_image / test_batch_size
+test_iter = num_test_image // test_batch_size
 
 solver_param = {
     # Train parameters
