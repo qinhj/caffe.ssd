@@ -105,6 +105,8 @@ void SampleBBox(const Sampler& sampler, NormalizedBBox* sampled_bbox) {
   // Figure out bbox dimension.
   float bbox_width = scale * sqrt(aspect_ratio);
   float bbox_height = scale / sqrt(aspect_ratio);
+  if (1. < bbox_width) bbox_width = 1.;
+  if (1. < bbox_height) bbox_height = 1.;
 
   // Figure out top left coordinates.
   float w_off, h_off;
