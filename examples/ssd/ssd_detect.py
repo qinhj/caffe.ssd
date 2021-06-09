@@ -47,8 +47,9 @@ class CaffeDetection:
         self.net = caffe.Net(model_def,      # defines the structure of the model
                              model_weights,  # contains the trained weights
                              caffe.TEST)     # use test mode (e.g., don't perform dropout)
-         # input preprocessing: 'data' is the name of the input blob == net.inputs[0]
-        self.transformer = caffe.io.Transformer({'data': self.net.blobs['data'].data.shape})
+        # input preprocessing: 'data' is the name of the input blob == net.inputs[0]
+        #self.transformer = caffe.io.Transformer({'data': self.net.blobs['data'].data.shape})
+        self.transformer = caffe.io.Transformer({'data': (1, 3, image_resize, image_resize)})
         self.transformer.set_transpose('data', (2, 0, 1))
         self.transformer.set_mean('data', np.array([104, 117, 123])) # mean pixel
         # the reference model operates on images in [0,255] range instead of [0,1]
@@ -84,6 +85,8 @@ class CaffeDetection:
         det_ymin = detections[0,0,:,4]
         det_xmax = detections[0,0,:,5]
         det_ymax = detections[0,0,:,6]
+        print("output shape:", detections.shape)
+        #print(det_xmin, det_ymin, det_xmax, det_ymax)
 
         # Get detections with confidence higher than 0.6.
         top_indices = [i for i, conf in enumerate(det_conf) if conf >= conf_thresh]
@@ -113,7 +116,7 @@ def main(args):
     detection = CaffeDetection(args.gpu_id,
                                args.model_def, args.model_weights,
                                args.image_resize, args.labelmap_file)
-    result = detection.detect(args.image_file)
+    result = detection.detect(args.image_file, args.threshold)
     print(result)
 
     img = Image.open(args.image_file)
@@ -128,9 +131,8 @@ def main(args):
         draw.rectangle([xmin, ymin, xmax, ymax], outline=(255, 0, 0))
         draw.text([xmin, ymin], item[-1] + str(item[-2]), (0, 0, 255))
         print("item:", item)
-        print("bbox:", xmin, ymin, xmax, ymax)
-        print([xmin, ymin], item[-1])
-    img.save('detect_result.jpg')
+        print("bbox:", xmin, ymin, xmax, ymax, item[-1])
+    img.save(args.output)
 
 
 def parse_args():
@@ -141,11 +143,15 @@ def parse_args():
                         default='data/VOC0712/labelmap_voc.prototxt')
     parser.add_argument('--model_def',
                         default='models/VGGNet/VOC0712/SSD_300x300/deploy.prototxt')
+#                        default='models/VGGNet/VOC0712/SSD_512x512/deploy.prototxt')
     parser.add_argument('--image_resize', default=300, type=int)
     parser.add_argument('--model_weights',
-                        default='models/VGGNet/VOC0712/SSD_300x300/'
-                        'VGG_VOC0712_SSD_300x300_iter_120000.caffemodel')
+                        default='models/VGGNet/VOC0712/'
+                        'SSD_300x300/VGG_VOC0712_SSD_300x300_iter_120000.caffemodel')
+#                        'SSD_512x512/VGG_VOC0712_SSD_512x512_iter_120000.caffemodel')
     parser.add_argument('--image_file', default='examples/images/fish-bike.jpg')
+    parser.add_argument('--threshold', default=0.5, type=float)
+    parser.add_argument('--output', default='detect_result.jpg')
     return parser.parse_args()
 
 if __name__ == '__main__':

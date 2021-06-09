@@ -104,6 +104,7 @@ void PriorBoxLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
   const int layer_width = bottom[0]->width();
   const int layer_height = bottom[0]->height();
+  printf("[%s] layer width: %d, height: %d\n", __FUNCTION__, layer_width, layer_height);
   vector<int> top_shape(3, 1);
   // Since all images in a batch has same height and width, we only need to
   // generate one set of priors which can be shared across all images.
@@ -137,8 +138,28 @@ void PriorBoxLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     step_w = step_w_;
     step_h = step_h_;
   }
+  printf("[%s] layer width: %d, height: %d\n", __FUNCTION__, layer_width, layer_height);
+  printf("[%s] image width: %d, height: %d\n", __FUNCTION__, img_width, img_height);
+  printf("[%s]  step width: %f, height: %f\n", __FUNCTION__, step_w, step_h);
   Dtype* top_data = top[0]->mutable_cpu_data();
   int dim = layer_height * layer_width * num_priors_ * 4;
+  printf("[%s] dim: %d, priors num: %d\n", __FUNCTION__, dim, num_priors_);
+  for (int s = 0; s < min_sizes_.size(); ++s) {
+    int min_size_ = min_sizes_[s];
+    printf("[%s]  min  width: %d, height: %d\n", __FUNCTION__, min_size_, min_size_);
+    if (max_sizes_.size() > 0) {
+      int max_size_ = max_sizes_[s];
+      float box_size_ = sqrt(min_size_ * max_size_);
+      printf("[%s]  box  width: %f, height: %f\n", __FUNCTION__, box_size_, box_size_);
+    }
+    for (int r = 0; r < aspect_ratios_.size(); ++r) {
+      float ar = aspect_ratios_[r];
+      float box_width = min_size_ * sqrt(ar);
+      float box_height = min_size_ / sqrt(ar);
+      printf("[%s]  box  width: %f, height: %f\n", __FUNCTION__, box_width, box_height);
+    }
+  }
+
   int idx = 0;
   for (int h = 0; h < layer_height; ++h) {
     for (int w = 0; w < layer_width; ++w) {
